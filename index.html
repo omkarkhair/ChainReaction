@@ -1,0 +1,326 @@
+<!DOCTYPE HTML>
+<html>
+	<head>
+		<title>Chain Reaction</title>
+		<script type="text/javascript" src="jquery.js" ></script>
+	</head>
+	<body>
+		<audio id="pop" src="pop.wav" preload="auto"></audio>
+		<canvas id="gameCanvas" height="500" width="500">
+		</canvas>
+		<script>
+			var height =500;
+			var width = 500;
+			var square = 50;
+
+			currentPlayer = 0;
+			var explodeStack = [];
+			var queue = {
+				arr: [],
+				start: 0,
+				end: 0,
+				enqueue: function(data){
+					this.arr[this.end++] = data;
+				},
+				dequeue: function(){
+					if(this.end == this.start)
+					{
+						console.log("Queue empty");
+						return undefined;
+					}
+					else
+					{
+						var t = this.arr[this.start];
+						this.arr[this.start] = undefined;
+						this.start++;
+						return t;
+					}
+				},
+				length: function(){
+					return this.end - this.start;
+				}
+			};
+
+			var canvas = document.getElementById('gameCanvas');
+      		var ctx = canvas.getContext('2d');
+
+      		var sq = function(player, atoms){
+      			this.player = player;
+      			this.atoms = atoms;
+      		}
+
+      		var colors = [
+				"rgba(255,0,0,0.7)",
+				"rgba(0,255,0,0.7)",
+				"rgba(0,0,255,0.7)",
+				"rgba(255,255,0,0.7)",
+				"rgba(0,255,255,0.7)"
+      		];
+      		var players = [];
+      		var scoreFlag = false;
+
+      		var atoms = [];
+
+      		function init(num){
+      			for (var i = 0; i < width/square; i++) {
+      				atoms[i] = [];
+      				for (var j = 0; j < height/square; j++) {
+      					atoms[i][j] = new sq(0,0);
+      				};
+      			};
+
+      			for (var i = 0; i < num; i++) {
+      				console.log("created");
+      				players.push(colors[i]);
+      			};
+      		}
+
+      		function makeMove(player, x, y){
+      			if(atoms[x][y].player == 0 || atoms[x][y].player == player)
+      			{
+	      			addAtom(player, x, y);
+	      			chainReaction();
+	      			return true;
+      			}
+      			else
+      			{
+      				return false;
+      			}
+      		}
+
+      		function addAtom(player, x, y){
+      			atoms[x][y].player = player;
+      			atoms[x][y].atoms++;
+
+      			var max = 4;
+      			if(x == 0 || x == ((width/square) - 1)){
+      				max--;
+      			}
+      			if(y == 0 || y == ((height/square) - 1)){
+      				max--;
+      			}
+
+      			if(atoms[x][y].atoms >= max){
+      				//Explode
+      				//explode(player,x,y)
+      				/*explodeStack.push({
+      					x: x,
+      					y: y
+      				});*/
+					queue.enqueue({
+						x: x,
+						y: y
+					});
+      			}
+      		}
+
+      		function chainReaction(){
+      			/*while(explodeStack.length > 0){
+      				console.log("Exploding");
+      				var index = explodeStack.length - 1;
+      				setTimeout(explode(explodeStack[index].x, explodeStack[index].y),400);
+      				explodeStack.splice(index, 1);
+      			}*/
+
+      			// while(queue.length() > 0){
+      			// 	console.log("Exploding");
+      			// 	var squ = queue.dequeue();
+      			// 	setTimeout(explode(squ.x, squ.y),400);
+      			// }
+
+      			var state;
+
+      			function burst(){
+      				if(queue.length() > 0)
+      				{
+	      				console.log("Exploding");
+	      				var squ = queue.dequeue();
+	      				explode(squ.x, squ.y);
+	      			}
+	      			else
+	      			{
+	      				clearInterval(state);
+	      			}
+      			}
+
+      			state = setInterval(burst,2000);
+      		}
+
+      		function explode(x,y){
+      			
+      			var player = atoms[x][y].player;
+
+      			var max = 4;
+      			if(x == 0 || x == ((width/square) - 1)){
+      				max--;
+      			}
+      			if(y == 0 || y == ((height/square) - 1)){
+      				max--;
+      			}
+
+      			if(atoms[x][y].atoms >= max){
+      				document.getElementById('audiotag1').play();
+      				if(x > 0){
+	      				addAtom(player,x-1,y);
+	      			}
+
+	      			if(x < (width/square) - 1){
+	      				addAtom(player,x+1,y);
+	      			}
+
+	      			if(y > 0){
+	      				addAtom(player,x,y-1);
+	      			}
+
+	      			if(y < (height/square) - 1){
+	      				addAtom(player,x,y+1);
+	      			}
+
+	      			atoms[x][y].player = 0;
+	      			atoms[x][y].atoms = 0;
+      			}
+      			else
+      			{
+      				console.log("False alarm at",x,y);
+      			}
+      		}
+
+      		function drawAtoms(context){
+      			var presence = [];
+      			for (var i = 0; i < atoms.length; i++) {
+      				for (var j = 0; j < atoms[i].length; j++) {
+      					var x = i;
+      					var y = j;
+      					var radius = square/4;
+
+      					presence[atoms[x][y].player] = true;
+      					switch(atoms[i][j].atoms)
+      					{
+      						case 1:
+	      					context.fillStyle = players[atoms[i][j].player];
+	      					context.beginPath();
+	      					context.arc((x*square)+25,(y*square)+25,radius,0,Math.PI*2,true);
+	      					context.closePath();
+	      					context.fill();
+	      					break;
+
+	      					case 2:
+	      					context.fillStyle = players[atoms[i][j].player];
+	      					context.beginPath();
+	      					context.arc((x*square)+20,(y*square)+25,radius,0,Math.PI*2,true);
+	      					context.closePath();
+	      					context.fill();
+
+	      					context.fillStyle = players[atoms[i][j].player];
+	      					context.beginPath();
+	      					context.arc((x*square)+30,(y*square)+25,radius,0,Math.PI*2,true);
+	      					context.closePath();
+	      					context.fill();
+	      					break;
+
+	      					case 3:
+	      					context.fillStyle = players[atoms[i][j].player];
+	      					context.beginPath();
+	      					context.arc((x*square)+20,(y*square)+25,radius,0,Math.PI*2,true);
+	      					context.closePath();
+	      					context.fill();
+
+	      					context.fillStyle = players[atoms[i][j].player];
+	      					context.beginPath();
+	      					context.arc((x*square)+30,(y*square)+25,radius,0,Math.PI*2,true);
+	      					context.closePath();
+	      					context.fill();
+
+	      					context.fillStyle = players[atoms[i][j].player];
+	      					context.beginPath();
+	      					context.arc((x*square)+25,(y*square)+30,radius,0,Math.PI*2,true);
+	      					context.closePath();
+	      					context.fill();
+	      					break;
+
+	      					case 4:
+	      					context.fillStyle = players[atoms[i][j].player];
+	      					context.beginPath();
+	      					context.arc((x*square)+20,(y*square)+20,radius,0,Math.PI*2,true);
+	      					context.closePath();
+	      					context.fill();
+
+	      					context.fillStyle = players[atoms[i][j].player];
+	      					context.beginPath();
+	      					context.arc((x*square)+30,(y*square)+30,radius,0,Math.PI*2,true);
+	      					context.closePath();
+	      					context.fill();
+
+	      					context.fillStyle = players[atoms[i][j].player];
+	      					context.beginPath();
+	      					context.arc((x*square)+20,(y*square)+30,radius,0,Math.PI*2,true);
+	      					context.closePath();
+	      					context.fill();
+
+	      					context.fillStyle = players[atoms[i][j].player];
+	      					context.beginPath();
+	      					context.arc((x*square)+30,(y*square)+20,radius,0,Math.PI*2,true);
+	      					context.closePath();
+	      					context.fill();
+	      					break;
+
+	      					case 0:
+	      					break;
+      					}
+      				};
+      			};
+
+      			if(scoreFlag){
+	      			for (var i = 0; i < players.length; i++) {
+	      				if(!presence[i]){
+	      					console.log("Removing", i);
+	      					players.splice(i,1);
+	      				}
+	      			};
+      			}
+      		}
+
+			function drawGrid(context){
+				context.strokeStyle = players[currentPlayer];
+				for (var i = 0; i <= width; i = i + square) {
+					context.beginPath();
+					context.moveTo(i, 0);
+					context.lineTo(i, height);
+					context.stroke();	
+				};
+
+				for (var i = 0; i <= height; i = i + square) {
+					context.beginPath();
+					context.moveTo(0, i);
+					context.lineTo(width, i);
+					context.stroke();	
+				};
+			}
+
+			function gameLoop(){
+				//Clear canvas
+				ctx.clearRect(0,0,width,height);
+
+				drawGrid(ctx);
+				drawAtoms(ctx);
+				// addAtom(1,50,50,1,ctx);
+			}
+
+			init(2);
+			setInterval(gameLoop, 200);
+
+
+			$("#gameCanvas").click(function(e){
+				console.log(e.offsetX, e.offsetY);
+				if(makeMove(currentPlayer,Math.floor(e.offsetX/square),Math.floor(e.offsetY/square)))
+				{
+					if(!scoreFlag){
+						if(currentPlayer >= (players.length - 1)) scoreFlag = true;
+					}
+
+					currentPlayer = (++currentPlayer) % players.length;
+				}
+			});
+		</script>
+	</body>
+</html>
