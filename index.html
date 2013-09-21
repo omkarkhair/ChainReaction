@@ -129,18 +129,23 @@
       			// }
 
       			var state;
-
+      			console.log(queue.arr);
       			function burst(){
-      				if(queue.length() > 0)
-      				{
-	      				console.log("Exploding");
-	      				var squ = queue.dequeue();
-	      				explode(squ.x, squ.y);
-	      			}
-	      			else
-	      			{
-	      				clearInterval(state);
-	      			}
+
+      				var burstNow = [];
+
+      				while(queue.length() > 0){
+      					burstNow.push(queue.dequeue());
+      					console.log("Add - to burst now");
+      				}
+
+      				for (var i = 0; i < burstNow.length; i++) {
+      					explode(burstNow[i].x, burstNow[i].y)
+      				};
+
+      				if(queue.length() == 0){
+      					clearInterval(state);
+      				}
       			}
 
       			state = setInterval(burst,2000);
@@ -176,8 +181,13 @@
 	      				addAtom(player,x,y+1);
 	      			}
 
-	      			atoms[x][y].player = 0;
-	      			atoms[x][y].atoms = 0;
+	      			atoms[x][y].atoms -= max;
+
+	      			if(atoms[x][y] <= 0)
+	      			{
+	      				atoms[x][y].player = 0;
+	      			}
+	      			
       			}
       			else
       			{
@@ -196,6 +206,9 @@
       					presence[atoms[x][y].player] = true;
       					switch(atoms[i][j].atoms)
       					{
+      						case 0:
+      						break;
+
       						case 1:
 	      					context.fillStyle = players[atoms[i][j].player];
 	      					context.beginPath();
@@ -238,7 +251,7 @@
 	      					context.fill();
 	      					break;
 
-	      					case 4:
+	      					default:
 	      					context.fillStyle = players[atoms[i][j].player];
 	      					context.beginPath();
 	      					context.arc((x*square)+20,(y*square)+20,radius,0,Math.PI*2,true);
@@ -262,9 +275,6 @@
 	      					context.arc((x*square)+30,(y*square)+20,radius,0,Math.PI*2,true);
 	      					context.closePath();
 	      					context.fill();
-	      					break;
-
-	      					case 0:
 	      					break;
       					}
       				};
